@@ -11,29 +11,35 @@ namespace SVN.TwitchApi.Modules
         private string Channel { get; }
         private Action<string> Log { get; }
 
-        internal ChatBot(string channel, Action<MessageDto> handle, Action<string> log)
+        internal ChatBot(string name, string oauth, string channel, Action<MessageDto> handle, Action<string> log)
         {
             this.Channel = channel;
             this.Log = log;
-            this.Start(handle);
+            this.Start(name, oauth, handle);
         }
 
-        private void Start(Action<MessageDto> handle)
+        private void Start(string name, string oauth, Action<MessageDto> handle)
         {
-            base.Handle = x => this.Handle(x, handle);
+            base.OnConnectionHandleMessage = (x, y) =>
+            {
+                if (y is string z)
+                {
+                    this.Handle(z, handle);
+                }
+            };
             base.Start("irc.chat.twitch.tv", 6667);
-            base.Send($"PASS {Settings.BotOAuth}");
-            base.Send($"NICK {Settings.BotName}");
+            base.Send($"PASS {oauth}");
+            base.Send($"NICK {name}");
             base.Send($"JOIN #{this.Channel}");
         }
 
-        public new void Send(string message)
+        public void Send(string message)
         {
             this.Log($"sending: {message}");
             base.Send(string.Format(Settings.BotMessageSendFormat, this.Channel, message));
         }
 
-        private new void Handle(string message, Action<MessageDto> handle)
+        private void Handle(string message, Action<MessageDto> handle)
         {
             this.Log($"receiving: {message}");
 

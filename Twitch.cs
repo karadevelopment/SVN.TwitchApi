@@ -1,5 +1,6 @@
 ﻿using SVN.TwitchApi.ApiTransferObjects;
 using SVN.TwitchApi.Modules;
+using SVN.TwitchApi.Properties;
 using SVN.TwitchApi.TransferObjects;
 using SVN.Web.Request;
 using System;
@@ -57,7 +58,12 @@ namespace SVN.TwitchApi
 
         public static ChatBot CreateChatBot(string channel, Action<MessageDto> handle, Action<string> log)
         {
-            return new ChatBot(channel, handle, log);
+            return new ChatBot(Settings.BotName, Settings.BotOAuth, channel, handle, log);
+        }
+
+        public static ChatBot CreateChatBot(string name, string oauth, string channel, Action<MessageDto> handle, Action<string> log)
+        {
+            return new ChatBot(name, oauth, channel, handle, log);
         }
     }
 }
