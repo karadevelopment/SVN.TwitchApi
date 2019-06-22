@@ -8,28 +8,33 @@ namespace SVN.TwitchApi.Modules
 {
     public class ChatBot : Client
     {
+        private string Name { get; }
+        private string OAuth { get; }
         private string Channel { get; }
+        private Action<MessageDto> Handler { get; }
         private Action<string> Log { get; }
 
-        internal ChatBot(string name, string oauth, string channel, Action<MessageDto> handle, Action<string> log)
+        internal ChatBot(string name, string oauth, string channel, Action<MessageDto> handler, Action<string> log)
         {
+            this.Name = name;
+            this.OAuth = oauth;
             this.Channel = channel;
+            this.Handler = handler;
             this.Log = log;
-            this.Start(name, oauth, handle);
         }
 
-        private void Start(string name, string oauth, Action<MessageDto> handle)
+        public void Start()
         {
-            base.OnConnectionHandleMessage = (x, y) =>
+            base.OnConnectionHandleMessage = (id, message) =>
             {
-                if (y is string z)
+                if (message is string message2)
                 {
-                    this.Handle(z, handle);
+                    this.Handle(message2);
                 }
             };
             base.Start("irc.chat.twitch.tv", 6667);
-            base.Send($"PASS {oauth}");
-            base.Send($"NICK {name}");
+            base.Send($"PASS {this.OAuth}");
+            base.Send($"NICK {this.Name}");
             base.Send($"JOIN #{this.Channel}");
         }
 
@@ -39,7 +44,7 @@ namespace SVN.TwitchApi.Modules
             base.Send(string.Format(Settings.BotMessageSendFormat, this.Channel, message));
         }
 
-        private void Handle(string message, Action<MessageDto> handle)
+        private void Handle(string message)
         {
             this.Log($"receiving: {message}");
 
@@ -56,7 +61,7 @@ namespace SVN.TwitchApi.Modules
                 message = message.Substring(message.IndexOf(Settings.BotMessageReceiveFormatStart) + Settings.BotMessageReceiveFormatStart.Length);
                 message = message.Substring(message.IndexOf(Settings.BotMessageReceiveFormatStart) + Settings.BotMessageReceiveFormatStart.Length);
 
-                handle(new MessageDto
+                this.Handler(new MessageDto
                 {
                     type = MessageType.System,
                     user = "Twitch",
@@ -69,7 +74,7 @@ namespace SVN.TwitchApi.Modules
                 var user = message.Remove(message.IndexOf('!'));
                 message = message.Substring(message.IndexOf(Settings.BotMessageReceiveFormatStart) + Settings.BotMessageReceiveFormatStart.Length);
 
-                handle(new MessageDto
+                this.Handler(new MessageDto
                 {
                     type = MessageType.UserPublic,
                     user = user,
